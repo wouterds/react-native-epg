@@ -13,6 +13,7 @@ import { XMLParser } from 'fast-xml-parser';
 import { uniqBy } from 'lodash';
 import Config from 'react-native-config';
 import { call, put, takeEvery } from 'redux-saga/effects';
+import Gzip from 'rn-gzip';
 import { setChannels } from 'store/channels/slice';
 import { Channel } from 'store/channels/types';
 import { setEvents } from 'store/events/slice';
@@ -111,9 +112,15 @@ function* bootstrapFlow() {
 
   console.log('[bootstrap] bootstrapping app');
 
-  let data: string;
+  let data: string = '';
   try {
-    ({ data } = yield call(axios.get, Config.EPG_ENDPOINT));
+    const response = yield call(axios.get, Config.EPG_ENDPOINT, {
+      responseType: 'arraybuffer',
+    });
+
+    if (response) {
+      data = Gzip.unzip(response.data);
+    }
   } catch (e) {
     console.error('fetching data failed', e);
     yield put(bootstrapError());
